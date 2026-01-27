@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Path Checker</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 2rem;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    .check-item {
+      margin: 1rem 0;
+      padding: 1rem;
+      background: #2a2a2a;
+      border-radius: 4px;
+    }
+    .status-ok { color: #4ade80; }
+    .status-fail { color: #f87171; }
+    img { max-width: 200px; max-height: 200px; margin-top: 0.5rem; display: block; }
+  </style>
+</head>
+<body>
+  <h1>Image Path Checker</h1>
+  <p>This page checks if all image paths are accessible. Check the browser console (F12) for detailed errors.</p>
+  <div id="results"></div>
+
+  <script src="projects-data.js"></script>
+  <script>
+    const results = document.getElementById('results');
+    const allImages = [];
+
+    // Add project images
+    if (window.PROJECTS_DATA) {
+      window.PROJECTS_DATA.forEach(project => {
+        if (project.thumbnail) allImages.push({ path: project.thumbnail, type: 'thumbnail', project: project.title });
+        if (project.images) {
+          project.images.forEach(img => {
+            allImages.push({ path: img, type: 'gallery', project: project.title });
+          });
+        }
+      });
+    }
+
+    // Add hero images
+    allImages.push({ path: 'images/headshot/Headshot.png', type: 'headshot', project: 'Hero' });
+    allImages.push({ path: 'images/header/McMaster-University-Sign.jpg', type: 'header', project: 'Hero' });
+
+    // Remove duplicates
+    const uniqueImages = Array.from(new Map(allImages.map(img => [img.path, img])).values());
+
+    let checked = 0;
+    const total = uniqueImages.length;
+
+    uniqueImages.forEach(({ path, type, project }) => {
+      const div = document.createElement('div');
+      div.className = 'check-item';
+      div.innerHTML = `<strong>${project}</strong> - ${type}<br><code>${path}</code><br><span class="status-checking">Checking...</span>`;
+      results.appendChild(div);
+
+      const img = new Image();
+      img.onload = () => {
+        div.querySelector('.status-checking').className = 'status-ok';
+        div.querySelector('.status-checking').textContent = '✓ OK';
+        div.appendChild(img);
+        checked++;
+        if (checked === total) {
+          const summary = document.createElement('div');
+          summary.style.marginTop = '2rem';
+          summary.style.padding = '1rem';
+          summary.style.background = '#2a2a2a';
+          summary.innerHTML = `<strong>Summary:</strong> ${checked}/${total} images loaded successfully`;
+          results.appendChild(summary);
+        }
+      };
+      img.onerror = () => {
+        div.querySelector('.status-checking').className = 'status-fail';
+        div.querySelector('.status-checking').textContent = '✗ FAILED - Check case sensitivity and file existence';
+        checked++;
+        if (checked === total) {
+          const summary = document.createElement('div');
+          summary.style.marginTop = '2rem';
+          summary.style.padding = '1rem';
+          summary.style.background = '#2a2a2a';
+          const failed = uniqueImages.length - checked;
+          summary.innerHTML = `<strong>Summary:</strong> ${checked}/${total} images loaded. ${failed} failed. Check console for details.`;
+          results.appendChild(summary);
+        }
+      };
+      img.src = path;
+    });
+  </script>
+</body>
+</html>
